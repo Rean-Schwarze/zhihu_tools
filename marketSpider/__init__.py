@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import logging
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import fontPreview
 
@@ -18,6 +19,7 @@ class MarketSpider:
         self.header = header
         self.marketTitle = None
         self.glyfDict = {}
+
     # 保存为html文件。防止多次请求
     def getMarketHtml(self, url):
         response = requests.get(url, verify=False, headers=self.header)
@@ -75,13 +77,12 @@ class MarketSpider:
         content = etree.HTML(html)
         content = content.xpath('string(//*[@id="resolved"])')
         content = json.loads(content)
-        contents = content["appContext"]["__connectedAutoFetch"]["manuscript"]["data"][
-            "manuscriptData"
-        ]["pTagList"] # 获取内容
-        
+        contents = content["appContext"]["__connectedAutoFetch"]["manuscript"]["data"]["manuscriptData"][
+            "manuscript"]  # 获取内容
+
         self.marketTitle = content["appContext"]["__connectedAutoFetch"]["manuscript"]["data"][
-            "manuscriptData"
-        ]["title"] + ".txt" # 获取标题
+                               "manuscriptData"
+                           ]["title"] + ".txt"  # 获取标题
         with open(self.marketTitle + ".temp", "w", encoding="utf-8") as f:
             for item in contents:
                 f.write(item + "\n")
@@ -89,7 +90,7 @@ class MarketSpider:
         return True
 
     # 替换正文中的文字
-    def replace_text(self, text, replacement_dict): 
+    def replace_text(self, text, replacement_dict):
         result = []
         for char in text:
             if char in replacement_dict:
@@ -97,17 +98,30 @@ class MarketSpider:
             else:
                 result.append(char)
         return "".join(result)
+
     # 解析字体文件
     def parse(self):
         self.glyfDict = fontPreview.FontPreview().preview("font.woff", "images")
-        with open(self.marketTitle+".temp", "r", encoding="utf-8") as f:
+        with open(self.marketTitle + ".temp", "r", encoding="utf-8") as f:
             content = f.read()
 
         content = self.replace_text(content, self.glyfDict)
 
+        content = re.sub(r"(?<!\n)\n(?!\n)", "", content)  # 去掉换行
+        content = re.sub(r"\n{3,}", "\n\n", content)  # 去掉换行
+
+        content = content.replace("<p>", "").replace("</p>", "")  # 去掉<p>标签
+
+        content = re.sub(r"<span.*?>.*?</span>", "", content) # 去掉<span>和</span>之间的内容
+        
+        content = content.replace("二", "一")  # 二 -> 一
+
         with open(self.marketTitle, "w", encoding="utf-8") as f:
             f.write(content)
+
+        os.remove(self.marketTitle + ".temp")  # 删除临时文件
         logging.info("文章解析成功！")
+
     def spider(self, url):
         self.getMarketHtml(url)
         self.getFontFile()
