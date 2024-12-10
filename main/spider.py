@@ -12,7 +12,7 @@ class zhihuSpider:
         self.__option = None # 选项 暂时为空
         self.__header = {}
         self.__header["Cookie"] = self.__config["Cookie"]  # 设置cookie
-        self.__header["User-Agent"] = self.__config["User-Agent"] + " "+ str(fakeUserAgent.fakeUserAgent().getRandomUserAgent())  # 设置User-Agent
+        self.__header["User-Agent"] = self.__config["User-Agent"]  # 设置User-Agent
     
     def getOptionChoise(self) -> str:
 

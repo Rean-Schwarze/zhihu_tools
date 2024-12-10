@@ -84,8 +84,7 @@ class MarketSpider:
                                "manuscriptData"
                            ]["title"] + ".txt"  # 获取标题
         with open(self.marketTitle + ".temp", "w", encoding="utf-8") as f:
-            for item in contents:
-                f.write(item + "\n")
+            f.write(contents)
         logging.info("内容获取成功！")
         return True
 
@@ -101,20 +100,17 @@ class MarketSpider:
 
     # 解析字体文件
     def parse(self):
-        self.glyfDict = fontPreview.FontPreview().preview("font.woff", "images")
+        # self.glyfDict = fontPreview.FontPreview().preview("font.woff", "images")
+        with open("dict.json", "r", encoding="utf-8") as f:
+            self.glyfDict = json.loads(f.read())
         with open(self.marketTitle + ".temp", "r", encoding="utf-8") as f:
             content = f.read()
 
+        content = content.replace("<p>", "").replace("</p>", "\n\n")  # 去掉<p>标签
+
         content = self.replace_text(content, self.glyfDict)
 
-        content = re.sub(r"(?<!\n)\n(?!\n)", "", content)  # 去掉换行
-        content = re.sub(r"\n{3,}", "\n\n", content)  # 去掉换行
-
-        content = content.replace("<p>", "").replace("</p>", "")  # 去掉<p>标签
-
-        content = re.sub(r"<span.*?>.*?</span>", "", content) # 去掉<span>和</span>之间的内容
-        
-        content = content.replace("二", "一")  # 二 -> 一
+        content = re.sub(r"<span.*?>.*?</span>", "", content)  # 去掉<span>和</span>之间的内容
 
         with open(self.marketTitle, "w", encoding="utf-8") as f:
             f.write(content)
